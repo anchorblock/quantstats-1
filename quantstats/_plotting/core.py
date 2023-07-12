@@ -887,6 +887,113 @@ def plot_rolling_beta(
 
     return None
 
+def plot_longest_drawdowns_basic(
+    fig, ax,
+    returns,
+    periods=5,
+    lw=1.5,
+    fontname="Times New Roman",
+    grayscale=False,
+    title=None,
+    log_scale=False,
+    figsize=(10, 6),
+    ylabel=True,
+    subtitle=True,
+    compounded=True,
+    savefig=None,
+    show=True,
+):
+
+    colors = ["#348dc1", "#003366", "red"]
+    if grayscale:
+        colors = ["#000000"] * 3
+
+    dd = _stats.to_drawdown_series(returns.fillna(0))
+    dddf = _stats.drawdown_details(dd)
+    longest_dd = dddf.sort_values(by="days", ascending=False, kind="mergesort")[
+        :periods
+    ]
+
+    # fig, ax = _plt.subplots(figsize=figsize)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["bottom"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+
+  
+    if subtitle:
+        ax.set_title(
+            "%s - %s           \n"
+            % (
+                returns.index.date[:1][0].strftime("%e %b '%y"),
+                returns.index.date[-1:][0].strftime("%e %b '%y"),
+            ),
+            fontsize=12,
+            color="gray",
+        )
+
+    fig.set_facecolor("white")
+    ax.set_facecolor("white")
+    series = _stats.compsum(returns) if compounded else returns.cumsum()
+    ax.plot(series, lw=lw, label="Backtest", color=colors[0])
+
+    highlight = "black" if grayscale else "red"
+    for _, row in longest_dd.iterrows():
+        ax.axvspan(
+            *_mdates.datestr2num([str(row["start"]), str(row["end"])]),
+            color=highlight,
+            alpha=0.1,
+        )
+
+    # rotate and align the tick labels so they look better
+    fig.autofmt_xdate()
+
+    # use a more precise date string for the x axis locations in the toolbar
+    ax.fmt_xdata = _mdates.DateFormatter("%Y-%m-%d")
+
+    ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
+    _plt.yscale("symlog" if log_scale else "linear")
+    if ylabel:
+        ax.set_ylabel(
+            "Cumulative Returns",
+            fontname=fontname,
+            fontweight="bold",
+            fontsize=12,
+            color="black",
+        )
+        ax.yaxis.set_label_coords(-0.1, 0.5)
+
+    ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
+    # ax.yaxis.set_major_formatter(_plt.FuncFormatter(
+    #     lambda x, loc: "{:,}%".format(int(x*100))))
+
+    fig.autofmt_xdate()
+
+    try:
+        _plt.subplots_adjust(hspace=0, bottom=0, top=1)
+    except Exception:
+        pass
+
+    try:
+        fig.tight_layout()
+    except Exception:
+        pass
+
+    if savefig:
+        if isinstance(savefig, dict):
+            _plt.savefig(**savefig)
+        else:
+            _plt.savefig(savefig)
+
+    if show:
+        _plt.show(block=False)
+
+    _plt.close()
+
+    if not show:
+        return fig
+
+    return None
 
 def plot_longest_drawdowns(
     returns,

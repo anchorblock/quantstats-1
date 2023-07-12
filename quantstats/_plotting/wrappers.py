@@ -752,6 +752,42 @@ def drawdown(
     if not show:
         return fig
 
+def basic_drawdowns_periods(fig, ax,
+    returns,
+    periods=5,
+    lw=1.5,
+    log_scale=False,
+    fontname="Arial",
+    grayscale=False,
+    title=None,
+    figsize=(10, 5),
+    ylabel=True,
+    subtitle=True,
+    compounded=True,
+    savefig=None,
+    show=True,
+    prepare_returns=True,
+):
+    if prepare_returns:
+        returns = _utils._prepare_returns(returns)
+
+    fig1 = _core.plot_longest_drawdowns_basic(fig, ax,
+        returns,
+        periods=periods,
+        lw=lw,
+        log_scale=log_scale,
+        fontname=fontname,
+        grayscale=grayscale,
+        title=title,
+        figsize=figsize,
+        ylabel=ylabel,
+        subtitle=subtitle,
+        compounded=compounded,
+        savefig=savefig,
+        show=show,
+    )
+    if not show:
+        return fig1
 
 def drawdowns_periods(
     returns,
@@ -916,7 +952,10 @@ def basic_plots(returns,
     ax[0].legend()
     
     # Drawdowns
-    basic_drawdown(fig, ax[1], returns)
+    # basic_drawdown(fig, ax[1], strategy_returns)
+    
+    # Drawdowns Period
+    basic_drawdowns_periods(fig, ax[1], strategy_returns)
     
     return
 
