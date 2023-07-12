@@ -20,6 +20,7 @@
 
 import pandas as _pd
 import numpy as _np
+import matplotlib.pyplot as _plt
 from math import sqrt as _sqrt, ceil as _ceil
 from datetime import datetime as _dt
 from base64 import b64encode as _b64encode
@@ -489,7 +490,7 @@ def html(
         f.write(tpl)
 
 
-def full(
+def full( 
     returns,
     benchmark=None,
     rf=0.0,
@@ -499,9 +500,37 @@ def full(
     compounded=True,
     periods_per_year=252,
     match_dates=True,
+    df=None, #expecting positions, long_exposure, short_exposure, net_leverage, gross_leverage columns
     **kwargs,
 ):
-
+    if df is not None:
+        iDisplay(iHTML("<h2>Leverage</h2>"))
+        avg_L_exp = df['long_exposure'].mean()
+        avg_S_exp = df['short_exposure'].mean()
+        avg_n_lev = df['net_leverage'].mean()
+        avg_g_lev = df.gross_leverage.mean()
+        print('Average Long Exposure =', avg_L_exp)
+        print('Average Short Exposure =', avg_S_exp)
+        print('Average Net Leverage=', avg_n_lev)
+        print('Average Gross Leverage=', avg_g_lev)
+        iDisplay(iHTML("<h4>Zipline Positions</h4>"))
+        positions=df[['positions']]
+        print(positions.to_string())
+        iDisplay(iHTML("<h4>Graphs</h4>"))
+        # Create 4 subplots
+        fig, axes = _plt.subplots(2, 2,figsize=(10, 8))
+        # Plot the data for each subplot
+        axes[0, 0].plot(df.index, df['gross_leverage'])
+        axes[0, 1].plot(df.index, df['net_leverage'])
+        axes[1, 0].plot(df.index, df['long_exposure'])
+        axes[1, 1].plot(df.index, df['short_exposure'])
+        # Add a title and labels to each subplot
+        axes[0, 0].set_title('Gross Leverage')
+        axes[0, 1].set_title('Net Leverage')
+        axes[1, 0].set_title('Long Exposure')
+        axes[1, 1].set_title('Short Exposure')
+        # Show the plots
+        _plt.show()
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -637,6 +666,8 @@ def full(
         strategy_title=strategy_title,
         active=active,
     )
+    
+        
 
 
 def basic(
