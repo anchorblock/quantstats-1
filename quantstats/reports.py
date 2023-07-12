@@ -28,6 +28,9 @@ from tabulate import tabulate as _tabulate
 from . import __version__, stats as _stats, utils as _utils, plots as _plots
 from dateutil.relativedelta import relativedelta
 from io import StringIO
+import logging  # Fonts Not found error fix
+logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
+
 
 try:
     from IPython.display import display as iDisplay, HTML as iHTML
