@@ -92,123 +92,138 @@ def _get_colors(grayscale):
     return colors, ls, alpha
 
 
-def plot_returns_bars(
+def plot_timeseries_basic(
+    fig, ax,
     returns,
     benchmark=None,
+    title="Returns",
+    compound=False,
+    cumulative=True,
+    fill=False,
     returns_label="Strategy",
     hline=None,
     hlw=None,
     hlcolor="red",
     hllabel="",
-    resample="A",
-    title="Returns",
+    percent=True,
     match_volatility=False,
     log_scale=False,
+    resample=None,
+    lw=1.5,
     figsize=(10, 6),
+    ylabel="",
     grayscale=False,
     fontname="Times New Roman",
-    ylabel=True,
     subtitle=True,
     savefig=None,
     show=True,
 ):
 
+    colors, ls, alpha = _get_colors(grayscale)
+
+    returns.fillna(0, inplace=True)
+    if isinstance(benchmark, _pd.Series):
+        benchmark.fillna(0, inplace=True)
+
     if match_volatility and benchmark is None:
         raise ValueError("match_volatility requires passing of " "benchmark.")
     if match_volatility and benchmark is not None:
-        bmark_vol = benchmark.loc[returns.index].std()
+        bmark_vol = benchmark.std()
         returns = (returns / returns.std()) * bmark_vol
 
     # ---------------
-    colors, _, _ = _get_colors(grayscale)
-    if isinstance(returns, _pd.Series):
-        df = _pd.DataFrame(index=returns.index, data={returns.name: returns})
-    elif isinstance(returns, _pd.DataFrame):
-        df = _pd.DataFrame(
-            index=returns.index, data={col: returns[col] for col in returns.columns}
-        )
-    if isinstance(benchmark, _pd.Series):
-        df[benchmark.name] = benchmark[benchmark.index.isin(returns.index)]
-        if isinstance(returns, _pd.Series):
-            df = df[[benchmark.name, returns.name]]
-        elif isinstance(returns, _pd.DataFrame):
-            col_names = [benchmark.name, returns.columns]
-            df = df[list(_pd.core.common.flatten(col_names))]
+    if compound is True:
+        if cumulative:
+            returns = _stats.compsum(returns)
+            if isinstance(benchmark, _pd.Series):
+                benchmark = _stats.compsum(benchmark)
+        else:
+            returns = returns.cumsum()
+            if isinstance(benchmark, _pd.Series):
+                benchmark = benchmark.cumsum()
 
-    df = df.dropna()
-    if resample is not None:
-        df = df.resample(resample).apply(_stats.comp).resample(resample).last()
+    if resample:
+        returns = returns.resample(resample)
+        returns = returns.last() if compound is True else returns.sum()
+        if isinstance(benchmark, _pd.Series):
+            benchmark = benchmark.resample(resample)
+            benchmark = benchmark.last() if compound is True else benchmark.sum()
     # ---------------
 
-    fig, ax = _plt.subplots(figsize=figsize)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["bottom"].set_visible(False)
     ax.spines["left"].set_visible(False)
 
-    # use a more precise date string for the x axis locations in the toolbar
-    fig.suptitle(
-        title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
-    )
+    # fig.suptitle(
+    #     title, y=0.94, fontweight="bold", fontname=fontname, fontsize=14, color="black"
+    # )
 
-    if subtitle:
-        ax.set_title(
-            "%s - %s           \n"
-            % (
-                df.index.date[:1][0].strftime("%Y"),
-                df.index.date[-1:][0].strftime("%Y"),
-            ),
-            fontsize=12,
-            color="gray",
-        )
-
-    if benchmark is None:
-        colors = colors[1:]
-    df.plot(kind="bar", ax=ax, color=colors)
+    # if subtitle:
+    #     ax.set_title(
+    #         "%s - %s            \n"
+    #         % (
+    #             returns.index.date[:1][0].strftime("%e %b '%y"),
+    #             returns.index.date[-1:][0].strftime("%e %b '%y"),
+    #         ),
+    #         fontsize=12,
+    #         color="gray",
+    #     )
 
     fig.set_facecolor("white")
     ax.set_facecolor("white")
 
-    try:
-        ax.set_xticklabels(df.index.year)
-        years = sorted(list(set(df.index.year)))
-    except AttributeError:
-        ax.set_xticklabels(df.index)
-        years = sorted(list(set(df.index)))
+    if isinstance(benchmark, _pd.Series):
+        ax.plot(benchmark, lw=lw, ls=ls, label=benchmark.name, color=colors[0])
 
-    # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
-    # years = sorted(list(set(df.index.year)))
-    if len(years) > 10:
-        mod = int(len(years) / 10)
-        _plt.xticks(
-            _np.arange(len(years)),
-            [str(year) if not i % mod else "" for i, year in enumerate(years)],
-        )
+    alpha = 0.25 if grayscale else 1
+    if isinstance(returns, _pd.Series):
+        ax.plot(returns, lw=lw, label=returns.name, color=colors[1], alpha=alpha)
+    elif isinstance(returns, _pd.DataFrame):
+        # color_dict = {col: colors[i+1] for i, col in enumerate(returns.columns)}
+        for i, col in enumerate(returns.columns):
+            ax.plot(returns[col], lw=lw, label=col, alpha=alpha, color=colors[i + 1])
+
+    if fill:
+        if isinstance(returns, _pd.Series):
+            ax.fill_between(returns.index, 0, returns, color=colors[1], alpha=0.25)
+        elif isinstance(returns, _pd.DataFrame):
+            for i, col in enumerate(returns.columns):
+                ax.fill_between(
+                    returns[col].index, 0, returns[col], color=colors[i + 1], alpha=0.25
+                )
 
     # rotate and align the tick labels so they look better
     fig.autofmt_xdate()
 
+    # use a more precise date string for the x axis locations in the toolbar
+    # ax.fmt_xdata = _mdates.DateFormatter('%Y-%m-%d')
+
     if hline is not None:
         if not isinstance(hline, _pd.Series):
             if grayscale:
-                hlcolor = "gray"
+                hlcolor = "black"
             ax.axhline(hline, ls="--", lw=hlw, color=hlcolor, label=hllabel, zorder=2)
 
-    ax.axhline(0, ls="--", lw=1, color="#000000", zorder=2)
+    ax.axhline(0, ls="-", lw=1, color="gray", zorder=1)
+    ax.axhline(0, ls="--", lw=1, color="white" if grayscale else "black", zorder=2)
 
-    # if isinstance(benchmark, _pd.Series) or hline:
+    # if isinstance(benchmark, _pd.Series) or hline is not None:
     ax.legend(fontsize=11)
 
     _plt.yscale("symlog" if log_scale else "linear")
 
+    if percent:
+        ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
+        # ax.yaxis.set_major_formatter(_plt.FuncFormatter(
+        #     lambda x, loc: "{:,}%".format(int(x*100))))
+
     ax.set_xlabel("")
     if ylabel:
         ax.set_ylabel(
-            "Returns", fontname=fontname, fontweight="bold", fontsize=12, color="black"
+            ylabel, fontname=fontname, fontweight="bold", fontsize=12, color="black"
         )
-        ax.yaxis.set_label_coords(-0.1, 0.5)
-
-    ax.yaxis.set_major_formatter(_FuncFormatter(format_pct_axis))
+    ax.yaxis.set_label_coords(-0.1, 0.5)
 
     if benchmark is None and len(_pd.DataFrame(returns).columns) == 1:
         ax.get_legend().remove()
@@ -218,10 +233,10 @@ def plot_returns_bars(
     except Exception:
         pass
 
-    try:
-        fig.tight_layout()
-    except Exception:
-        pass
+    # try:
+    #     fig.tight_layout()
+    # except Exception:
+    #     pass
 
     if savefig:
         if isinstance(savefig, dict):
@@ -238,7 +253,6 @@ def plot_returns_bars(
         return fig
 
     return None
-
 
 def plot_timeseries(
     returns,

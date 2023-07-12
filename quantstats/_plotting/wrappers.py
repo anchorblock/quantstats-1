@@ -33,6 +33,7 @@ import seaborn as _sns
 from .. import (
     stats as _stats,
     utils as _utils,
+    plots as _plots
 )
 
 from . import core as _core
@@ -669,6 +670,46 @@ def histogram(
     )
 
 
+def basic_drawdown(fig,ax,returns,
+    grayscale=False,
+    figsize=(10, 5),
+    fontname="Arial",
+    lw=1,
+    log_scale=False,
+    match_volatility=False,
+    compound=False,
+    ylabel="Drawdown",
+    resample=None,
+    subtitle=True,
+    savefig=None,
+    show=True,):
+    
+    dd = _stats.to_drawdown_series(returns)
+
+    fig = _core.plot_timeseries_basic(fig, ax,
+        dd,
+        title="Underwater Plot",
+        hline=dd.mean(),
+        hlw=2,
+        hllabel="Average",
+        returns_label="Drawdown",
+        compound=compound,
+        match_volatility=match_volatility,
+        log_scale=log_scale,
+        resample=resample,
+        fill=True,
+        lw=lw,
+        figsize=figsize,
+        ylabel=ylabel,
+        fontname=fontname,
+        grayscale=grayscale,
+        subtitle=subtitle,
+        savefig=savefig,
+        show=show,
+    )
+    if not show:
+        return fig
+
 def drawdown(
     returns,
     grayscale=False,
@@ -835,6 +876,49 @@ def rolling_volatility(
     )
     if not show:
         return fig
+
+def basic_plots(returns,
+    benchmark=None,
+    rf=0.0,
+    period=126,
+    period_label="6-Months",
+    periods_per_year=252,
+    lw=1.25,
+    fontname="Arial",
+    grayscale=False,
+    figsize=(10, 3),
+    ylabel="Sharpe",
+    subtitle=True,
+    savefig=None,
+    show=True,):
+
+    strategy_returns = _utils._prepare_returns(returns)
+    returns_sharpe = _stats.rolling_sharpe(strategy_returns,rf,period,True,periods_per_year,)
+    
+    if benchmark is not None:
+        benchmark = _utils._prepare_benchmark(benchmark, returns.index)
+        benchmark_sharpe = _stats.rolling_sharpe(benchmark, rf, period, True, periods_per_year, prepare_returns=False)
+        benchmark_returns = _stats.compsum(benchmark)
+    _plots.returns(returns,
+            benchmark,
+            match_volatility=True,
+            grayscale=grayscale,
+            figsize=(figsize[0], figsize[0] * 0.5),
+            show=True,
+            ylabel=False,
+            prepare_returns=False,)
+    # Sharpe
+    fig, ax = _plt.subplots(1, 2, figsize=(figsize[0]* 1.25, figsize[1] * 0.5))
+    ax[0].plot(returns_sharpe, label = 'Strategy')
+    # ax[0].plot(benchmark_sharpe, label = 'Benchmark')
+    ax[0].axhline(0, color="red", ls="--")
+    ax[0].set_title('Rolling Sharpe Ratio (6-month window)')
+    ax[0].legend()
+    
+    # Drawdowns
+    basic_drawdown(fig, ax[1], returns)
+    
+    return
 
 
 def rolling_sharpe(
