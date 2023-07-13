@@ -1084,3 +1084,8 @@ def monthly_returns(returns, eoy=True, compounded=True, prepare_returns=True):
     returns.index.name = None
 
     return returns
+
+
+
+
+

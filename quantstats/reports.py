@@ -19,6 +19,7 @@
 # limitations under the License.
 
 import pandas as _pd
+import matplotlib.pyplot as plt
 import numpy as _np
 from math import sqrt as _sqrt, ceil as _ceil
 from datetime import datetime as _dt
@@ -489,6 +490,48 @@ def html(
         f.write(tpl)
 
 
+def plot_portfolio_with_signals(results):
+    # Initialize empty lists to store buy and sell signals
+    buy_signals = []
+    sell_signals = []
+
+    # Iterate over the rows of the dataframe
+    for _, row in results.iterrows():
+        transactions = row['transactions']
+        for transaction in transactions:
+            amount = transaction['amount']
+            if amount > 0:
+                buy_signals.append(row['period_close'])
+            elif amount < 0:
+                sell_signals.append(row['period_close'])
+
+    # Set the figure size
+    plt.figure(figsize=(24, 12))  # Adjust the width and height as needed
+
+    # Plotting portfolio value
+    plt.plot(results['period_close'], results['portfolio_value'], label='Portfolio Value')
+
+    # Adding buy signal markers
+    plt.scatter(buy_signals, [results.loc[results['period_close'] == p, 'portfolio_value'].values[0] for p in buy_signals],
+                color='green', marker='^', label='Buy Signal', s=10)  # Decrease the marker size by adjusting 's' parameter
+
+    # Adding sell signal markers
+    plt.scatter(sell_signals, [results.loc[results['period_close'] == p, 'portfolio_value'].values[0] for p in sell_signals],
+                color='red', marker='v', label='Sell Signal', s=10)  # Decrease the marker size by adjusting 's' parameter
+
+    # Adding labels and title
+    plt.xlabel('Period Close')
+    plt.ylabel('Portfolio Value')
+    plt.title('Portfolio Value with Buy and Sell Signals')
+
+    # Adding legend
+    plt.legend()
+
+    # Display the plot
+    plt.show()
+
+
+
 def full(
     returns,
     benchmark=None,
@@ -499,9 +542,11 @@ def full(
     compounded=True,
     periods_per_year=252,
     match_dates=True,
+    df = None,
     **kwargs,
 ):
 
+    print('Hello bhai')
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -625,6 +670,17 @@ def full(
         print("\n\n")
         print("[Strategy Visualization]\nvia Matplotlib")
 
+
+
+
+
+            
+    if df is not None:
+     
+     plot_portfolio_with_signals(df)
+
+    
+
     plots(
         returns=returns,
         benchmark=benchmark,
@@ -637,6 +693,9 @@ def full(
         strategy_title=strategy_title,
         active=active,
     )
+
+
+
 
 
 def basic(
@@ -1633,3 +1692,44 @@ def _embed_figure(figfiles, figfmt):
         data_uri = _b64encode(figbytes).decode()
         embed_string = '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
     return embed_string
+
+
+def plot_portfolio_with_signals(results):
+    # Initialize empty lists to store buy and sell signals
+    buy_signals = []
+    sell_signals = []
+
+    # Iterate over the rows of the dataframe
+    for _, row in results.iterrows():
+        transactions = row['transactions']
+        for transaction in transactions:
+            amount = transaction['amount']
+            if amount > 0:
+                buy_signals.append(row['period_close'])
+            elif amount < 0:
+                sell_signals.append(row['period_close'])
+
+    # Set the figure size
+    plt.figure(figsize=(24, 12))  # Adjust the width and height as needed
+
+    # Plotting portfolio value
+    plt.plot(results['period_close'], results['portfolio_value'], label='Portfolio Value')
+
+    # Adding buy signal markers
+    plt.scatter(buy_signals, [results.loc[results['period_close'] == p, 'portfolio_value'].values[0] for p in buy_signals],
+                color='green', marker='^', label='Buy Signal', s=10)  # Decrease the marker size by adjusting 's' parameter
+
+    # Adding sell signal markers
+    plt.scatter(sell_signals, [results.loc[results['period_close'] == p, 'portfolio_value'].values[0] for p in sell_signals],
+                color='red', marker='v', label='Sell Signal', s=10)  # Decrease the marker size by adjusting 's' parameter
+
+    # Adding labels and title
+    plt.xlabel('Period Close')
+    plt.ylabel('Portfolio Value')
+    plt.title('Portfolio Value with Buy and Sell Signals')
+
+    # Adding legend
+    plt.legend()
+
+    # Display the plot
+    plt.show()
