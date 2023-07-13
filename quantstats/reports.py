@@ -549,7 +549,6 @@ def full(
     df = None, #expecting positions, long_exposure, short_exposure, net_leverage, gross_leverage columns
     **kwargs,
 ):
-    
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
