@@ -19,6 +19,7 @@
 # limitations under the License.
 
 import pandas as _pd
+import matplotlib.pyplot as _plt
 import numpy as _np
 from math import sqrt as _sqrt, ceil as _ceil
 from datetime import datetime as _dt
@@ -45,7 +46,8 @@ def _get_trading_periods(periods_per_year=252):
 
 def _match_dates(returns, benchmark):
     if isinstance(returns, _pd.DataFrame):
-        loc = max(returns[returns.columns[0]].ne(0).idxmax(), benchmark.ne(0).idxmax())
+        loc = max(returns[returns.columns[0]].ne(
+            0).idxmax(), benchmark.ne(0).idxmax())
     else:
         loc = max(returns.ne(0).idxmax(), benchmark.ne(0).idxmax())
     returns = returns.loc[loc:]
@@ -146,7 +148,8 @@ def html(
         for i in reversed(range(num_cols + 1, num_cols + 3)):
             str_td = "<td></td>" * i
             tpl = tpl.replace(
-                f"<tr>{str_td}</tr>", '<tr><td colspan="{}"><hr></td></tr>'.format(i)
+                f"<tr>{str_td}</tr>", '<tr><td colspan="{}"><hr></td></tr>'.format(
+                    i)
             )
 
     tpl = tpl.replace(
@@ -161,7 +164,8 @@ def html(
             returns, benchmark, "A", compounded=compounded, prepare_returns=False
         )
         if isinstance(returns, _pd.Series):
-            yoy.columns = [benchmark_title, strategy_title, "Multiplier", "Won"]
+            yoy.columns = [benchmark_title,
+                           strategy_title, "Multiplier", "Won"]
         elif isinstance(returns, _pd.DataFrame):
             yoy.columns = list(
                 _pd.core.common.flatten([benchmark_title, strategy_title])
@@ -171,12 +175,15 @@ def html(
         tpl = tpl.replace("{{eoy_table}}", _html_table(yoy))
     else:
         # pct multiplier
-        yoy = _pd.DataFrame(_utils.group_returns(returns, returns.index.year) * 100)
+        yoy = _pd.DataFrame(_utils.group_returns(
+            returns, returns.index.year) * 100)
         if isinstance(returns, _pd.Series):
             yoy.columns = ["Return"]
-            yoy["Cumulative"] = _utils.group_returns(returns, returns.index.year, True)
+            yoy["Cumulative"] = _utils.group_returns(
+                returns, returns.index.year, True)
             yoy["Return"] = yoy["Return"].round(2).astype(str) + "%"
-            yoy["Cumulative"] = (yoy["Cumulative"] * 100).round(2).astype(str) + "%"
+            yoy["Cumulative"] = (yoy["Cumulative"] *
+                                 100).round(2).astype(str) + "%"
         elif isinstance(returns, _pd.DataFrame):
             # Don't show cumulative for multiple strategy portfolios
             # just show compounded like when we have a benchmark
@@ -208,7 +215,8 @@ def html(
         dd_html_table = ""
         for html_str, col in zip(dd_info_list, returns.columns):
             dd_html_table = (
-                dd_html_table + f"<h3>{col}</h3><br>" + StringIO(html_str).read()
+                dd_html_table + f"<h3>{col}</h3><br>" +
+                StringIO(html_str).read()
             )
         tpl = tpl.replace("{{dd_info}}", dd_html_table)
 
@@ -426,7 +434,8 @@ def html(
             compounded=compounded,
             active=active,
         )
-        tpl = tpl.replace("{{monthly_heatmap}}", _embed_figure(figfile, figfmt))
+        tpl = tpl.replace("{{monthly_heatmap}}",
+                          _embed_figure(figfile, figfmt))
     elif isinstance(returns, _pd.DataFrame):
         embed = []
         for col in returns.columns:
@@ -492,6 +501,48 @@ def html(
         f.write(tpl)
 
 
+def plot_portfolio_with_signals(results):
+    # Initialize empty lists to store buy and sell signals
+    buy_signals = []
+    sell_signals = []
+
+    # Iterate over the rows of the dataframe
+    for _, row in results.iterrows():
+        transactions = row['transactions']
+        for transaction in transactions:
+            amount = transaction['amount']
+            if amount > 0:
+                buy_signals.append(row['period_close'])
+            elif amount < 0:
+                sell_signals.append(row['period_close'])
+
+    # Set the figure size
+    _plt.figure(figsize=(24, 12))  # Adjust the width and height as needed
+
+    # Plotting portfolio value
+    _plt.plot(results['period_close'],
+              results['portfolio_value'], label='Portfolio Value')
+
+    # Adding buy signal markers
+    _plt.scatter(buy_signals, [results.loc[results['period_close'] == p, 'portfolio_value'].values[0] for p in buy_signals],
+                 color='green', marker='^', label='Buy Signal', s=10)  # Decrease the marker size by adjusting 's' parameter
+
+    # Adding sell signal markers
+    _plt.scatter(sell_signals, [results.loc[results['period_close'] == p, 'portfolio_value'].values[0] for p in sell_signals],
+                 color='red', marker='v', label='Sell Signal', s=10)  # Decrease the marker size by adjusting 's' parameter
+
+    # Adding labels and title
+    _plt.xlabel('Period Close')
+    _plt.ylabel('Portfolio Value')
+    _plt.title('Portfolio Value with Buy and Sell Signals')
+
+    # Adding legend
+    _plt.legend()
+
+    # Display the plot
+    _plt.show()
+
+
 def full(
     returns,
     benchmark=None,
@@ -502,9 +553,11 @@ def full(
     compounded=True,
     periods_per_year=252,
     match_dates=True,
+    df=None,
     **kwargs,
 ):
 
+    print('Hello bhai')
     # prepare timeseries
     if match_dates:
         returns = returns.dropna()
@@ -535,7 +588,8 @@ def full(
 
     if isinstance(dd, _pd.Series):
         col = _stats.drawdown_details(dd).columns[4]
-        dd_info = _stats.drawdown_details(dd).sort_values(by=col, ascending=True)[:5]
+        dd_info = _stats.drawdown_details(
+            dd).sort_values(by=col, ascending=True)[:5]
         if not dd_info.empty:
             dd_info.index = range(1, min(6, len(dd_info) + 1))
             dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
@@ -548,7 +602,8 @@ def full(
             )[:5]
             if not dd_info.empty:
                 dd_info.index = range(1, min(6, len(dd_info) + 1))
-                dd_info.columns = map(lambda x: str(x).title(), dd_info.columns)
+                dd_info.columns = map(
+                    lambda x: str(x).title(), dd_info.columns)
             dd_info_dict[ptf] = dd_info
 
     if _utils._in_notebook():
@@ -628,6 +683,9 @@ def full(
         print("\n\n")
         print("[Strategy Visualization]\nvia Matplotlib")
 
+    if df is not None:
+        plot_portfolio_with_signals(df)
+
     plots(
         returns=returns,
         benchmark=benchmark,
@@ -689,21 +747,21 @@ def basic(
             strategy_title=strategy_title,
         )
         iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
-        
-        _plots.basic_plots( returns,
-                            benchmark=benchmark,
-                            rf=0.0,
-                            period=126,
-                            period_label="6-Months",
-                            periods_per_year=252,
-                            lw=1.25,
-                            fontname="Arial",
-                            grayscale=False,
-                            figsize=figsize,
-                            ylabel="Sharpe",
-                            subtitle=True,
-                            savefig=None,
-                            show=True,)
+
+        _plots.basic_plots(returns,
+                           benchmark=benchmark,
+                           rf=0.0,
+                           period=126,
+                           period_label="6-Months",
+                           periods_per_year=252,
+                           lw=1.25,
+                           fontname="Arial",
+                           grayscale=False,
+                           figsize=figsize,
+                           ylabel="Sharpe",
+                           subtitle=True,
+                           savefig=None,
+                           show=True,)
     else:
         print("[Performance Metrics]\n")
         metrics(
@@ -813,11 +871,13 @@ def metrics(
     elif isinstance(returns, _pd.DataFrame):
         df_strategy_columns = [col for col in df.columns if col != "benchmark"]
         s_start = {
-            strategy_col: df[strategy_col].dropna().index.strftime("%Y-%m-%d")[0]
+            strategy_col: df[strategy_col].dropna(
+            ).index.strftime("%Y-%m-%d")[0]
             for strategy_col in df_strategy_columns
         }
         s_end = {
-            strategy_col: df[strategy_col].dropna().index.strftime("%Y-%m-%d")[-1]
+            strategy_col: df[strategy_col].dropna(
+            ).index.strftime("%Y-%m-%d")[-1]
             for strategy_col in df_strategy_columns
         }
         s_rf = {strategy_col: rf for strategy_col in df_strategy_columns}
@@ -845,12 +905,28 @@ def metrics(
     metrics["Start Period"] = _pd.Series(s_start)
     metrics["End Period"] = _pd.Series(s_end)
     metrics["Risk-Free Rate %"] = _pd.Series(s_rf) * 100
-    metrics["Time in Market %"] = _stats.exposure(df, prepare_returns=False) * pct
+    metrics["Time in Market %"] = _stats.exposure(
+        df, prepare_returns=False) * pct
 
     metrics["~"] = blank
 
     if compounded:
-        metrics["Cumulative Return %"] = (_stats.comp(df) * pct).map("{:,.2f}".format)
+        metrics["Cumulative Return %"] = (
+            _stats.comp(df) * pct).map("{:,.2f}".format)
+        # adding code for active return:
+        numcum = {}
+        for ind in metrics.index:
+            numcum[ind] = float(
+                metrics['Cumulative Return %'].loc[ind].replace(',', ''))
+        metrics['Cumulative Return1 %'] = metrics.index.map(numcum)
+        active_return = {}
+        active_return['benchmark'] = 0
+        for ind in metrics.index:
+            if ind != 'benchmark':
+                active_return[ind] = metrics['Cumulative Return1 %'].loc[ind] - \
+                    metrics['Cumulative Return1 %'].loc['benchmark']
+        metrics['Active Return %'] = metrics.index.map(active_return)
+        metrics = metrics.drop(columns='Cumulative Return1 %')
     else:
         metrics["Total Return %"] = (df.sum() * pct).map("{:,.2f}".format)
 
@@ -886,7 +962,8 @@ def metrics(
     if mode.lower() == "full":
         if isinstance(returns, _pd.Series):
             ret_vol = (
-                _stats.volatility(df["returns"], win_year, True, prepare_returns=False)
+                _stats.volatility(df["returns"], win_year,
+                                  True, prepare_returns=False)
                 * pct
             )
         elif isinstance(returns, _pd.DataFrame):
@@ -907,7 +984,8 @@ def metrics(
 
             vol_ = [ret_vol, bench_vol]
             if isinstance(ret_vol, list):
-                metrics["Volatility (ann.) %"] = list(_pd.core.common.flatten(vol_))
+                metrics["Volatility (ann.) %"] = list(
+                    _pd.core.common.flatten(vol_))
             else:
                 metrics["Volatility (ann.) %"] = vol_
 
@@ -948,18 +1026,22 @@ def metrics(
         metrics["~~~~~~~~~~"] = blank
 
         metrics["Expected Daily %%"] = (
-            _stats.expected_return(df, compounded=compounded, prepare_returns=False) * pct
+            _stats.expected_return(
+                df, compounded=compounded, prepare_returns=False) * pct
         )
         metrics["Expected Monthly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.expected_return(
+                df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Expected Yearly %%"] = (
-            _stats.expected_return(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.expected_return(
+                df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
         )
         metrics["Kelly Criterion %"] = (
             _stats.kelly_criterion(df, prepare_returns=False) * pct
         )
-        metrics["Risk of Ruin %"] = _stats.risk_of_ruin(df, prepare_returns=False)
+        metrics["Risk of Ruin %"] = _stats.risk_of_ruin(
+            df, prepare_returns=False)
 
         metrics["Daily Value-at-Risk %"] = -abs(
             _stats.var(df, prepare_returns=False) * pct
@@ -984,18 +1066,22 @@ def metrics(
 
     metrics["Payoff Ratio"] = _stats.payoff_ratio(df, prepare_returns=False)
     metrics["Profit Factor"] = _stats.profit_factor(df, prepare_returns=False)
-    metrics["Common Sense Ratio"] = _stats.common_sense_ratio(df, prepare_returns=False)
+    metrics["Common Sense Ratio"] = _stats.common_sense_ratio(
+        df, prepare_returns=False)
     metrics["CPC Index"] = _stats.cpc_index(df, prepare_returns=False)
     metrics["Tail Ratio"] = _stats.tail_ratio(df, prepare_returns=False)
-    metrics["Outlier Win Ratio"] = _stats.outlier_win_ratio(df, prepare_returns=False)
-    metrics["Outlier Loss Ratio"] = _stats.outlier_loss_ratio(df, prepare_returns=False)
+    metrics["Outlier Win Ratio"] = _stats.outlier_win_ratio(
+        df, prepare_returns=False)
+    metrics["Outlier Loss Ratio"] = _stats.outlier_loss_ratio(
+        df, prepare_returns=False)
 
     # returns
     metrics["~~"] = blank
     comp_func = _stats.comp if compounded else _np.sum
 
     today = df.index[-1]  # _dt.today()
-    metrics["MTD %"] = comp_func(df[df.index >= _dt(today.year, today.month, 1)]) * pct
+    metrics["MTD %"] = comp_func(
+        df[df.index >= _dt(today.year, today.month, 1)]) * pct
 
     d = today - relativedelta(months=3)
     metrics["3M %"] = comp_func(df[df.index >= d]) * pct
@@ -1009,32 +1095,39 @@ def metrics(
     metrics["1Y %"] = comp_func(df[df.index >= d]) * pct
 
     d = today - relativedelta(months=35)
-    metrics["3Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["3Y (ann.) %"] = _stats.cagr(
+        df[df.index >= d], 0.0, compounded) * pct
 
     d = today - relativedelta(months=59)
-    metrics["5Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["5Y (ann.) %"] = _stats.cagr(
+        df[df.index >= d], 0.0, compounded) * pct
 
     d = today - relativedelta(years=10)
-    metrics["10Y (ann.) %"] = _stats.cagr(df[df.index >= d], 0.0, compounded) * pct
+    metrics["10Y (ann.) %"] = _stats.cagr(
+        df[df.index >= d], 0.0, compounded) * pct
 
     metrics["All-time (ann.) %"] = _stats.cagr(df, 0.0, compounded) * pct
 
     # best/worst
     if mode.lower() == "full":
         metrics["~~~"] = blank
-        metrics["Best Day %"] = _stats.best(df, compounded=compounded, prepare_returns=False) * pct
+        metrics["Best Day %"] = _stats.best(
+            df, compounded=compounded, prepare_returns=False) * pct
         metrics["Worst Day %"] = _stats.worst(df, prepare_returns=False) * pct
         metrics["Best Month %"] = (
-            _stats.best(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="M",
+                        prepare_returns=False) * pct
         )
         metrics["Worst Month %"] = (
             _stats.worst(df, aggregate="M", prepare_returns=False) * pct
         )
         metrics["Best Year %"] = (
-            _stats.best(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.best(df, compounded=compounded, aggregate="A",
+                        prepare_returns=False) * pct
         )
         metrics["Worst Year %"] = (
-            _stats.worst(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.worst(df, compounded=compounded, aggregate="A",
+                         prepare_returns=False) * pct
         )
 
     # dd
@@ -1049,20 +1142,26 @@ def metrics(
     if mode.lower() == "full":
         metrics["~~~~~"] = blank
         metrics["Avg. Up Month %"] = (
-            _stats.avg_win(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_win(df, compounded=compounded,
+                           aggregate="M", prepare_returns=False) * pct
         )
         metrics["Avg. Down Month %"] = (
-            _stats.avg_loss(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.avg_loss(df, compounded=compounded,
+                            aggregate="M", prepare_returns=False) * pct
         )
-        metrics["Win Days %%"] = _stats.win_rate(df, prepare_returns=False) * pct
+        metrics["Win Days %%"] = _stats.win_rate(
+            df, prepare_returns=False) * pct
         metrics["Win Month %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="M", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded,
+                            aggregate="M", prepare_returns=False) * pct
         )
         metrics["Win Quarter %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="Q", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded,
+                            aggregate="Q", prepare_returns=False) * pct
         )
         metrics["Win Year %%"] = (
-            _stats.win_rate(df, compounded=compounded, aggregate="A", prepare_returns=False) * pct
+            _stats.win_rate(df, compounded=compounded,
+                            aggregate="A", prepare_returns=False) * pct
         )
 
         if "benchmark" in df:
@@ -1074,7 +1173,8 @@ def metrics(
                 metrics["Beta"] = [str(round(greeks["beta"], 2)), "-"]
                 metrics["Alpha"] = [str(round(greeks["alpha"], 2)), "-"]
                 metrics["Correlation"] = [
-                    str(round(df["benchmark"].corr(df["returns"]) * pct, 2)) + "%",
+                    str(round(df["benchmark"].corr(
+                        df["returns"]) * pct, 2)) + "%",
                     "-",
                 ]
                 metrics["Treynor Ratio"] = [
@@ -1100,11 +1200,14 @@ def metrics(
                     )
                     for strategy_col in df_strategy_columns
                 ]
-                metrics["Beta"] = [str(round(g["beta"], 2)) for g in greeks] + ["-"]
-                metrics["Alpha"] = [str(round(g["alpha"], 2)) for g in greeks] + ["-"]
+                metrics["Beta"] = [str(round(g["beta"], 2))
+                                   for g in greeks] + ["-"]
+                metrics["Alpha"] = [str(round(g["alpha"], 2))
+                                    for g in greeks] + ["-"]
                 metrics["Correlation"] = (
                     [
-                        str(round(df["benchmark"].corr(df[strategy_col]) * pct, 2))
+                        str(round(df["benchmark"].corr(
+                            df[strategy_col]) * pct, 2))
                         + "%"
                         for strategy_col in df_strategy_columns
                     ]
@@ -1135,7 +1238,8 @@ def metrics(
             pass
         if (display or "internal" in kwargs) and "*int" in col:
             metrics[col] = metrics[col].str.replace(".0", "", regex=False)
-            metrics.rename({col: col.replace("*int", "")}, axis=1, inplace=True)
+            metrics.rename({col: col.replace("*int", "")},
+                           axis=1, inplace=True)
         if (display or "internal" in kwargs) and "%" in col:
             metrics[col] = metrics[col] + "%"
 
@@ -1149,7 +1253,8 @@ def metrics(
 
         if display or "internal" in kwargs:
             metrics["Longest DD Days"] = metrics["Longest DD Days"].astype(str)
-            metrics["Avg. Drawdown Days"] = metrics["Avg. Drawdown Days"].astype(str)
+            metrics["Avg. Drawdown Days"] = metrics["Avg. Drawdown Days"].astype(
+                str)
     except Exception:
         metrics["Longest DD Days"] = "-"
         metrics["Avg. Drawdown Days"] = "-"
@@ -1157,8 +1262,10 @@ def metrics(
             metrics["Longest DD Days"] = "-"
             metrics["Avg. Drawdown Days"] = "-"
 
-    metrics.columns = [col if "~" not in col else "" for col in metrics.columns]
-    metrics.columns = [col[:-1] if "%" in col else col for col in metrics.columns]
+    metrics.columns = [
+        col if "~" not in col else "" for col in metrics.columns]
+    metrics.columns = [
+        col[:-1] if "%" in col else col for col in metrics.columns]
     metrics = metrics.T
 
     if "benchmark" in df:
@@ -1539,7 +1646,8 @@ def _calc_dd(df, display=True, as_pct=False):
                 / 100,
                 "Longest DD Days": str(
                     _np.round(
-                        ret_dd.sort_values(by="days", ascending=False)["days"].values[0]
+                        ret_dd.sort_values(by="days", ascending=False)[
+                            "days"].values[0]
                     )
                 ),
                 "Avg. Drawdown %": ret_dd["max drawdown"].mean() / 100,
@@ -1555,7 +1663,8 @@ def _calc_dd(df, display=True, as_pct=False):
             / 100,
             "Longest DD Days": str(
                 _np.round(
-                    bench_dd.sort_values(by="days", ascending=False)["days"].values[0]
+                    bench_dd.sort_values(by="days", ascending=False)[
+                        "days"].values[0]
                 )
             ),
             "Avg. Drawdown %": bench_dd["max drawdown"].mean() / 100,
@@ -1567,7 +1676,8 @@ def _calc_dd(df, display=True, as_pct=False):
 
     dd_stats = _pd.DataFrame(dd_stats).T
     dd_stats["Max Drawdown %"] = dd_stats["Max Drawdown %"].astype(float) * pct
-    dd_stats["Avg. Drawdown %"] = dd_stats["Avg. Drawdown %"].astype(float) * pct
+    dd_stats["Avg. Drawdown %"] = dd_stats["Avg. Drawdown %"].astype(
+        float) * pct
 
     return dd_stats.T
 
@@ -1601,7 +1711,8 @@ def _download_html(html, filename="quantstats-tearsheet.html"):
             "\n", ""
         ),
     )
-    jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
+    jscode = jscode.replace("{{html}}", _regex.sub(
+        " +", " ", html.replace("\n", "")))
     if _utils._in_notebook():
         iDisplay(iHTML(jscode.replace("{{filename}}", filename)))
 
@@ -1616,7 +1727,8 @@ def _open_html(html):
             "\n", ""
         ),
     )
-    jscode = jscode.replace("{{html}}", _regex.sub(" +", " ", html.replace("\n", "")))
+    jscode = jscode.replace("{{html}}", _regex.sub(
+        " +", " ", html.replace("\n", "")))
     if _utils._in_notebook():
         iDisplay(iHTML(jscode))
 
@@ -1630,12 +1742,14 @@ def _embed_figure(figfiles, figfmt):
                 return figbytes.decode()
             data_uri = _b64encode(figbytes).decode()
             embed_string.join(
-                '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
+                '<img src="data:image/{};base64,{}" />'.format(
+                    figfmt, data_uri)
             )
     else:
         figbytes = figfiles.getvalue()
         if figfmt == "svg":
             return figbytes.decode()
         data_uri = _b64encode(figbytes).decode()
-        embed_string = '<img src="data:image/{};base64,{}" />'.format(figfmt, data_uri)
+        embed_string = '<img src="data:image/{};base64,{}" />'.format(
+            figfmt, data_uri)
     return embed_string
