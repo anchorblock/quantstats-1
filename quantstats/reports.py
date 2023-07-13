@@ -29,6 +29,9 @@ from tabulate import tabulate as _tabulate
 from . import __version__, stats as _stats, utils as _utils, plots as _plots
 from dateutil.relativedelta import relativedelta
 from io import StringIO
+import logging  # Fonts Not found error fix
+logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
+
 
 try:
     from IPython.display import display as iDisplay, HTML as iHTML
@@ -745,6 +748,21 @@ def basic(
             strategy_title=strategy_title,
         )
         iDisplay(iHTML("<h4>Strategy Visualization</h4>"))
+        
+        _plots.basic_plots( returns,
+                            benchmark=benchmark,
+                            rf=0.0,
+                            period=126,
+                            period_label="6-Months",
+                            periods_per_year=252,
+                            lw=1.25,
+                            fontname="Arial",
+                            grayscale=False,
+                            figsize=figsize,
+                            ylabel="Sharpe",
+                            subtitle=True,
+                            savefig=None,
+                            show=True,)
     else:
         print("[Performance Metrics]\n")
         metrics(
@@ -763,18 +781,18 @@ def basic(
         print("\n\n")
         print("[Strategy Visualization]\nvia Matplotlib")
 
-    plots(
-        returns=returns,
-        benchmark=benchmark,
-        grayscale=grayscale,
-        figsize=figsize,
-        mode="basic",
-        periods_per_year=periods_per_year,
-        prepare_returns=False,
-        benchmark_title=benchmark_title,
-        strategy_title=strategy_title,
-        active=active,
-    )
+    # plots(
+    #     returns=returns,
+    #     benchmark=benchmark,
+    #     grayscale=grayscale,
+    #     figsize=figsize,
+    #     mode="basic",
+    #     periods_per_year=periods_per_year,
+    #     prepare_returns=False,
+    #     benchmark_title=benchmark_title,
+    #     strategy_title=strategy_title,
+    #     active=active,
+    # )
 
 
 def metrics(
