@@ -833,6 +833,18 @@ def metrics(
 
     if compounded:
         metrics["Cumulative Return %"] = (_stats.comp(df) * pct).map("{:,.2f}".format)
+        #adding code for active return:
+        numcum = {}
+        for ind in metrics.index:
+            numcum[ind] = float(metrics['Cumulative Return %'].loc[ind].replace(',',''))
+        metrics['Cumulative Return1 %'] = metrics.index.map(numcum)
+        active_return ={}
+        active_return['benchmark']=0
+        for ind in metrics.index:
+            if ind != 'benchmark':
+                active_return[ind]= metrics['Cumulative Return1 %'].loc[ind]-metrics['Cumulative Return1 %'].loc['benchmark']
+        metrics['Active Return %'] = metrics.index.map(active_return) 
+        metrics = metrics.drop(columns='Cumulative Return1 %')       
     else:
         metrics["Total Return %"] = (df.sum() * pct).map("{:,.2f}".format)
 
