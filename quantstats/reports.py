@@ -543,6 +543,8 @@ def plot_portfolio_with_signals(results):
     _plt.show()
 
 
+
+
 def full(
     returns,
     benchmark=None,
@@ -553,7 +555,7 @@ def full(
     compounded=True,
     periods_per_year=252,
     match_dates=True,
-    df=None,
+    df = None,
     **kwargs,
 ):
 
@@ -698,6 +700,9 @@ def full(
         strategy_title=strategy_title,
         active=active,
     )
+
+
+
 
 
 def basic(
@@ -911,22 +916,19 @@ def metrics(
     metrics["~"] = blank
 
     if compounded:
-        metrics["Cumulative Return %"] = (
-            _stats.comp(df) * pct).map("{:,.2f}".format)
-        # adding code for active return:
+        metrics["Cumulative Return %"] = (_stats.comp(df) * pct).map("{:,.2f}".format)
+        #adding code for active return:
         numcum = {}
         for ind in metrics.index:
-            numcum[ind] = float(
-                metrics['Cumulative Return %'].loc[ind].replace(',', ''))
+            numcum[ind] = float(metrics['Cumulative Return %'].loc[ind].replace(',',''))
         metrics['Cumulative Return1 %'] = metrics.index.map(numcum)
-        active_return = {}
-        active_return['benchmark'] = 0
+        active_return ={}
+        active_return['benchmark']=0
         for ind in metrics.index:
             if ind != 'benchmark':
-                active_return[ind] = metrics['Cumulative Return1 %'].loc[ind] - \
-                    metrics['Cumulative Return1 %'].loc['benchmark']
-        metrics['Active Return %'] = metrics.index.map(active_return)
-        metrics = metrics.drop(columns='Cumulative Return1 %')
+                active_return[ind]= metrics['Cumulative Return1 %'].loc[ind]-metrics['Cumulative Return1 %'].loc['benchmark']
+        metrics['Active Return %'] = metrics.index.map(active_return) 
+        metrics = metrics.drop(columns='Cumulative Return1 %')       
     else:
         metrics["Total Return %"] = (df.sum() * pct).map("{:,.2f}".format)
 
@@ -1753,3 +1755,44 @@ def _embed_figure(figfiles, figfmt):
         embed_string = '<img src="data:image/{};base64,{}" />'.format(
             figfmt, data_uri)
     return embed_string
+
+
+def plot_portfolio_with_signals(results):
+    # Initialize empty lists to store buy and sell signals
+    buy_signals = []
+    sell_signals = []
+
+    # Iterate over the rows of the dataframe
+    for _, row in results.iterrows():
+        transactions = row['transactions']
+        for transaction in transactions:
+            amount = transaction['amount']
+            if amount > 0:
+                buy_signals.append(row['period_close'])
+            elif amount < 0:
+                sell_signals.append(row['period_close'])
+
+    # Set the figure size
+    plt.figure(figsize=(24, 12))  # Adjust the width and height as needed
+
+    # Plotting portfolio value
+    plt.plot(results['period_close'], results['portfolio_value'], label='Portfolio Value')
+
+    # Adding buy signal markers
+    plt.scatter(buy_signals, [results.loc[results['period_close'] == p, 'portfolio_value'].values[0] for p in buy_signals],
+                color='green', marker='^', label='Buy Signal', s=10)  # Decrease the marker size by adjusting 's' parameter
+
+    # Adding sell signal markers
+    plt.scatter(sell_signals, [results.loc[results['period_close'] == p, 'portfolio_value'].values[0] for p in sell_signals],
+                color='red', marker='v', label='Sell Signal', s=10)  # Decrease the marker size by adjusting 's' parameter
+
+    # Adding labels and title
+    plt.xlabel('Period Close')
+    plt.ylabel('Portfolio Value')
+    plt.title('Portfolio Value with Buy and Sell Signals')
+
+    # Adding legend
+    plt.legend()
+
+    # Display the plot
+    plt.show()

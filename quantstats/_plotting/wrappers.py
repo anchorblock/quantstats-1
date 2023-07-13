@@ -444,7 +444,8 @@ def log_returns(
     show=True,
     prepare_returns=True,
 ):
-
+    #remove log return
+    return None
     title = "Cumulative Returns" if compound else "Returns"
     if benchmark is not None:
         if isinstance(benchmark, str):
@@ -478,7 +479,7 @@ def log_returns(
         grayscale=grayscale,
         subtitle=subtitle,
         savefig=savefig,
-        show=show,
+        show=False,
     )
     if not show:
         return fig
@@ -547,7 +548,8 @@ def yearly_returns(
     show=True,
     prepare_returns=True,
 ):
-
+    #remove EOY returns
+    return None
     title = "EOY Returns"
     if benchmark is not None:
         title += "  vs Benchmark"
@@ -604,6 +606,8 @@ def distribution(
     title=None,
     prepare_returns=True,
 ):
+    #removed quantile distrbution
+    return None
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
@@ -637,7 +641,8 @@ def histogram(
     show=True,
     prepare_returns=True,
 ):
-
+    # removed Monthly returns
+    return None
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
         if benchmark is not None:
@@ -844,7 +849,8 @@ def rolling_beta(
     show=True,
     prepare_returns=True,
 ):
-
+    #removed rolling beta from original repo
+    return None
     if prepare_returns:
         returns = _utils._prepare_returns(returns)
 
@@ -865,10 +871,10 @@ def rolling_beta(
         ylabel=ylabel,
         subtitle=subtitle,
         savefig=savefig,
-        show=show,
+        show=False,
     )
     if not show:
-        return fig
+        return None
 
 
 def rolling_volatility(
@@ -976,7 +982,8 @@ def rolling_sharpe(
     savefig=None,
     show=True,
 ):
-
+    #Removed rolling sharpe from the original repo
+    return None
     returns = _stats.rolling_sharpe(
         returns,
         rf,
@@ -1004,10 +1011,10 @@ def rolling_sharpe(
         figsize=figsize,
         subtitle=subtitle,
         savefig=savefig,
-        show=show,
+        show=False,
     )
     if not show:
-        return fig
+        return None
 
 
 def rolling_sortino(
